@@ -68,17 +68,17 @@ export function convertTypeValue(v: { type: string; value: string }) {
 }
 
 export async function readCsv(filePath: string) {
-    return csv()
-        .fromFile(filePath, {
-            encoding: "utf-8",
-        })
-        .then((list) => {
-            return list;
-        });
+    return csv().fromFile(filePath, {
+        encoding: "utf-8",
+    });
 }
 
 export function filterEmptyName(v: { name: string }) {
     return v.name != "";
+}
+
+export function filterInValidName(v: { name: string }) {
+    return /^\w+$/i.test(v.name) && filterEmptyName(v);
 }
 
 export function filterIgnoreName(v: { name: string }, ignores: string[]) {
