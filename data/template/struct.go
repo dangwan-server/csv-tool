@@ -1,0 +1,5 @@
+type {$name} struct {
+
+{$prototype}
+
+}
