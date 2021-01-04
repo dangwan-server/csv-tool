@@ -96,3 +96,27 @@ export function getHeaderConfig(list: any[]) {
         };
     });
 }
+
+export function getIgnores(ignorePath: string, itemName: string): string[] {
+    if (!ignorePath) {
+        return [];
+    }
+
+    const filePath = path.resolve(ignorePath);
+
+    if (!isFile(filePath)) {
+        throw new Error(`配置文件${ignorePath}不存在`);
+    }
+
+    const config = JSON.parse(
+        fs.readFileSync(ignorePath, {
+            encoding: "utf-8",
+        })
+    );
+
+    if (!config) {
+        return [];
+    }
+
+    return config[itemName] || [];
+}

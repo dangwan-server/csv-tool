@@ -1,4 +1,4 @@
-import { convertTypeValue, filetrFileType, filterIgnoreName, filterInValidName, getHeaderConfig, isDir, objValues, readCsv } from "../lib/func";
+import { convertTypeValue, filetrFileType, filterIgnoreName, filterInValidName, getHeaderConfig, getIgnores, isDir, objValues, readCsv } from "../lib/func";
 import Variables from "../lib/variables";
 import Coder from "../lib/coder";
 import fs from "fs";
@@ -28,7 +28,7 @@ export default class GernerateLuaService {
             });
     }
 
-    generateFromDir(dir: string, outFile: string, ignores: string[]) {
+    generateFromDir(dir: string, outFile: string, ignores: string) {
         const files = fs.readdirSync(dir);
         const total = files.length;
         let redisCommandList: string[] = [];
@@ -40,7 +40,9 @@ export default class GernerateLuaService {
                 return path.join(dir, v);
             })
             .map((filePath: string) => {
-                this.readAsRedisCommand(filePath, ignores).then((list) => {
+                const catName = path.parse(filePath).name;
+
+                this.readAsRedisCommand(filePath, getIgnores(ignores, catName)).then((list) => {
                     counter++;
                     redisCommandList = redisCommandList.concat(list);
 

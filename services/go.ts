@@ -1,4 +1,4 @@
-import { filetrFileType, convertType, filterEmptyName, filterIgnoreName, getHeaderConfig, readCsv, upperCaseFirstW } from "../lib/func";
+import { filetrFileType, convertType, filterEmptyName, filterIgnoreName, getHeaderConfig, readCsv, upperCaseFirstW, getIgnores } from "../lib/func";
 import Variables from "../lib/variables";
 import Coder from "../lib/coder";
 import fs from "fs";
@@ -12,7 +12,7 @@ export default class GernerateGoService {
         this.app = app;
     }
 
-    generateFromDir(dir: string, outFile: string, ignores: string[]) {
+    generateFromDir(dir: string, outFile: string, ignores: string) {
         fs.readdirSync(dir)
             .filter((v) => filetrFileType(v, "csv"))
             .map((v) => {
@@ -23,7 +23,7 @@ export default class GernerateGoService {
             })
             .map((filePath: string) => {
                 const catName = path.parse(filePath).name;
-                this.generate(filePath, path.join(outFile, catName + ".go"), ignores);
+                this.generate(filePath, path.join(outFile, catName + ".go"), getIgnores(ignores, catName));
             });
     }
 
