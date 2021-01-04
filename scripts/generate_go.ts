@@ -1,13 +1,9 @@
 import HanldeAbstract from "../lib/handle";
-import { convertType, filetrFileType, isDir, objValues, readCsv, upperCaseFirstW } from "../lib/func";
+import { convertType, filetrFileType, filterEmptyName, filterIgnoreName, getHeaderConfig, isDir, readCsv, upperCaseFirstW } from "../lib/func";
 import Variables from "../lib/variables";
 import Coder from "../lib/coder";
 import fs from "fs";
 import path from "path";
-
-function filterEmptyName(v: { name: string }) {
-    return v.name != "";
-}
 
 export default class GeneralGoHandle extends HanldeAbstract {
     handle() {
@@ -37,20 +33,11 @@ export default class GeneralGoHandle extends HanldeAbstract {
             })
             .map((filePath: string) => {
                 readCsv(filePath).then((list) => {
-                    const names = objValues(list[0]);
-                    const types = objValues(list[1]);
                     const catName = path.parse(filePath).name;
 
-                    const prototypeStr = names
-                        .map((v, i) => {
-                            return {
-                                name: v,
-                                type: types[i],
-                                val: "",
-                            };
-                        })
+                    const prototypeStr = getHeaderConfig(list)
                         .filter(filterEmptyName)
-                        .filter((v) => ignores.indexOf(v.name) == -1)
+                        .filter((v) => filterIgnoreName(v, ignores))
                         .map((v) => {
                             return "    " + upperCaseFirstW(v.name) + "  " + convertType(v.type);
                         })

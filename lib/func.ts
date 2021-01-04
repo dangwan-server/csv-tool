@@ -76,3 +76,23 @@ export async function readCsv(filePath: string) {
             return list;
         });
 }
+
+export function filterEmptyName(v: { name: string }) {
+    return v.name != "";
+}
+
+export function filterIgnoreName(v: { name: string }, ignores: string[]) {
+    return ignores.indexOf(v.name) == -1;
+}
+
+export function getHeaderConfig(list: any[]) {
+    const names = objValues(list[0]);
+    const types = objValues(list[1]);
+    return names.map((v, i) => {
+        return {
+            name: v,
+            type: types[i],
+            val: "",
+        };
+    });
+}
