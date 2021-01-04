@@ -14,4 +14,8 @@ export default class PathService {
     goTemplatePath() {
         return path.join(this.rootDir, "template", "struct.go");
     }
+
+    ignoreJsonPath() {
+        return path.join(this.rootDir, "ignore.json");
+    }
 }

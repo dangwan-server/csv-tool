@@ -1,9 +1,7 @@
 import HanldeAbstract from "../lib/handle";
-import { convertType, filetrFileType, filterEmptyName, filterIgnoreName, getHeaderConfig, isDir, readCsv, upperCaseFirstW } from "../lib/func";
-import Variables from "../lib/variables";
-import Coder from "../lib/coder";
-import fs from "fs";
+import { isDir } from "../lib/func";
 import path from "path";
+import GernerateGoService from "../services/go";
 
 export default class GeneralGoHandle extends HanldeAbstract {
     private checkInFile(inFile: string) {
@@ -26,41 +24,8 @@ export default class GeneralGoHandle extends HanldeAbstract {
         this.checkInFile(inFile);
         this.checkOutFile(outFile);
 
-        const variables = new Variables();
-        let total = 0;
+        const handle = new GernerateGoService(this.app);
 
-        fs.readdirSync(inFile)
-            .filter((v) => filetrFileType(v, "csv"))
-            .map((v) => {
-                total++;
-                return v;
-            })
-            .map((v) => {
-                return path.join(inFile, v);
-            })
-            .map((filePath: string) => {
-                readCsv(filePath).then((list) => {
-                    const catName = path.parse(filePath).name;
-
-                    const prototypeStr = getHeaderConfig(list)
-                        .filter(filterEmptyName)
-                        .filter((v) => filterIgnoreName(v, ignores))
-                        .map((v) => {
-                            return "    " + upperCaseFirstW(v.name) + "  " + convertType(v.type);
-                        })
-                        .join("\n");
-
-                    variables.set("name", catName);
-                    variables.set("prototype", prototypeStr);
-
-                    const coderHandle = new Coder();
-
-                    const goStructContent = coderHandle.generate(this.app.path.goTemplatePath(), variables);
-
-                    fs.writeFileSync(path.join(outFile, catName + ".go"), goStructContent);
-                });
-            });
-
-        console.log(`生成成功，共处理了${total}个文件`);
+        handle.generateFromDir(inFile, outFile, ignores);
     }
 }
