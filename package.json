@@ -1,8 +1,11 @@
 {
     "scripts": {
-        "build": "rm -rf dist && tsc --outDir dist",
-        "pkg": "pkg -t node12.18.1-win-x64 dist/cli.js -o dist/cli-win",
-        "pkg-mac": "pkg -t node12.18.1-macos-x64 dist/cli.js -o dist/cli-mac"
+        "win-clean":"rm -rf dist/win/*",
+        "mac-clean":"rm -rf dist/mac/*",
+        "prepkg-win":"npm run win-clean && tsc --outDir dist/win",
+        "prepkg-mac":"rm -rf dist/mac && tsc --outDir dist/mac",
+        "pkg-win": "pkg -t node12.18.1-win-x64 dist/win//cli.js -o dist/win/cli-win",
+        "pkg-mac": "pkg -t node12.18.1-macos-x64 dist/mac/cli.js -o dist/mac/cli-mac"
     },
     "dependencies": {
         "@types/node": "^14.14.19",
