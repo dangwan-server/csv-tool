@@ -1,5 +1,9 @@
 {
-    "bin": "cli.ts",
+    "scripts": {
+        "build": "rm -rf dist && tsc --outDir dist",
+        "pkg": "pkg -t node12.18.1-win-x64 dist/cli.js -o dist/cli-win",
+        "pkg-mac": "pkg -t node12.18.1-macos-x64 dist/cli.js -o dist/cli-mac"
+    },
     "dependencies": {
         "@types/node": "^14.14.19",
         "csvtojson": "^2.0.10",
@@ -7,6 +11,6 @@
         "xlsx": "^0.16.9"
     },
     "pkg": {
-        "target": "node8"
+        "assets": "data/*"
     }
 }

@@ -69,7 +69,7 @@ export default class GernerateLuaService {
 
         const targetFile = isDir(outFile) ? path.join(outFile, "redis.lua") : outFile;
         const coderHandle = new Coder();
-        const resultContent = coderHandle.generate(this.app.path.luaTemplatePath(), variables);
+        const resultContent = coderHandle.generate("lua", variables);
 
         fs.writeFileSync(targetFile, resultContent);
     }

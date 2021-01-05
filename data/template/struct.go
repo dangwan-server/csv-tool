@@ -1,5 +1,0 @@
-type {$name} struct {
-
-{$prototype}
-
-}

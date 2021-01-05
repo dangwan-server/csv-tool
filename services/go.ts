@@ -48,7 +48,7 @@ export default class GernerateGoService {
 
             const coderHandle = new Coder();
 
-            const goStructContent = coderHandle.generate(this.app.path.goTemplatePath(), variables);
+            const goStructContent = coderHandle.generate("go", variables);
 
             fs.writeFileSync(outFile, goStructContent);
 

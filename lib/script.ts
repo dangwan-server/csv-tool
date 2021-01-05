@@ -27,10 +27,9 @@ export default class Script {
 
     make(appName: string) {
         if (!this.container.isExists(appName)) {
-            const msg = [`[${appName}]不存在`, `你是否找的是:\n[${this.container.keys().join("]\n[")}]`];
-            console.warn(msg.join("\n"));
+            const msg = [`命令:[${appName}]不存在`, `你是否找的是?\n[${this.container.keys().join("]\n[")}]`];
 
-            throw new Error(`${appName}不存在`);
+            throw new Error(msg.join("\n"));
         }
 
         return this.container.get(appName);

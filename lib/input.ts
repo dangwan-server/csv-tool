@@ -18,7 +18,7 @@ export default class Input implements Inputable {
             })
             .reduce((prev, v) => {
                 return Object.assign(prev, v);
-            });
+            }, {});
 
         console.log("入参：", this.args);
     }

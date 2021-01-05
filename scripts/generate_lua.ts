@@ -37,7 +37,10 @@ export default class GeneralLuaHandle extends HanldeAbstract {
                 throw new Error(`文件${inFile}不存在`);
             }
 
-            const ignores = this.input.get("ignore", "").split(",");
+            const ignores = this.input
+                .get("ignore", "")
+                .split(",")
+                .filter((v) => v != "");
 
             handle.generate(inFile, outFile, ignores);
         } else {
