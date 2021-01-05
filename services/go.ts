@@ -29,6 +29,9 @@ export default class GernerateGoService {
 
     generate(inFile: string, outFile: string, ignores: string[]) {
         const variables = new Variables();
+
+        if (ignores.length) console.log("忽略的字段", ignores);
+
         readCsv(inFile).then((list) => {
             const catName = path.parse(inFile).name;
 

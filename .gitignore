@@ -1,5 +1,7 @@
 .idea
 
+dist
+dist.tar
 node_modules
 package-lock.json
 data/csv/

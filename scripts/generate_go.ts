@@ -5,6 +5,14 @@ import GernerateGoService from "../services/go";
 
 export default class GeneralGoHandle extends HanldeAbstract {
     private checkOutFile(outFile: string) {
+        if (this.isSignle(outFile)) {
+            if (!isDir(path.dirname(outFile))) {
+                throw new Error(`目录${path.dirname(outFile)}不存在`);
+            }
+
+            return;
+        }
+
         if (!isDir(outFile)) {
             throw new Error(`目录${outFile}不存在`);
         }
@@ -27,7 +35,10 @@ export default class GeneralGoHandle extends HanldeAbstract {
                 throw new Error(`文件${inFile}不存在`);
             }
 
-            const ignores = this.input.get("ignore", "").split(",");
+            const ignores = this.input
+                .get("ignore", "")
+                .split(",")
+                .filter((v) => v != "");
 
             handle.generate(inFile, outFile, ignores);
         } else {

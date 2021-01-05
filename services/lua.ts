@@ -78,6 +78,10 @@ export default class GernerateLuaService {
         const redisCommandList: string[] = [];
         const catName = path.parse(filePath).name;
 
+        if (ignores.length) {
+            console.log(`${catName}被忽略的字段`, ignores);
+        }
+
         return readCsv(filePath).then((list) => {
             this.getList(list)
                 .map((v: any[]) => {
