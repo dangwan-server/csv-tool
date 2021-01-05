@@ -2,6 +2,7 @@
 
 dist
 dist.tar
+dist.zip
 node_modules
 package-lock.json
 data/csv/
