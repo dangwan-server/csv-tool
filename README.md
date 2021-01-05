@@ -9,6 +9,8 @@
 
 `windows`
 
+- 进入钉钉->企业盘->卡牌-go-分享
+
 - 下载dist.tar到本地
 
 - 解压dist.tar 
