@@ -120,3 +120,7 @@ export function getIgnores(ignorePath: string, itemName: string): string[] {
 
     return config[itemName] || [];
 }
+
+export function filterDefaultPointDirName(fileName: string) {
+    return fileName == "." || fileName == "..";
+}

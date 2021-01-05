@@ -29,13 +29,12 @@ export default class GernerateLuaService {
     }
 
     generateFromDir(dir: string, outFile: string, ignores: string) {
-        const files = fs.readdirSync(dir);
+        const files = fs.readdirSync(dir).filter((v) => filetrFileType(v, "csv"));
         const total = files.length;
         let redisCommandList: string[] = [];
         let counter = 0;
 
         files
-            .filter((v) => filetrFileType(v, "csv"))
             .map((v) => {
                 return path.join(dir, v);
             })
