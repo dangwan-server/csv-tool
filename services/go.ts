@@ -4,6 +4,7 @@ import Coder from "../lib/coder";
 import fs from "fs";
 import path from "path";
 import { Application } from "../types";
+import { checkType } from "../lib/check";
 
 export default class GernerateGoService {
     private app: Application;
@@ -31,8 +32,12 @@ export default class GernerateGoService {
 
         readCsv(inFile).then((list) => {
             const catName = path.parse(inFile).name;
+            const header = getHeaderConfig(list);
+            header.map((v, i) => {
+                checkType(this.app.typeManager.getType(v), `${catName}第${i}列类型错误:${v.type}`);
+            });
 
-            const prototypeStr = getHeaderConfig(list)
+            const prototypeStr = header
                 .filter(filterEmptyName)
                 .filter((v) => filterIgnoreName(v, ignores))
                 .map((v) => {

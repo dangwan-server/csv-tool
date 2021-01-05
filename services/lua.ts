@@ -4,6 +4,7 @@ import Coder from "../lib/coder";
 import fs from "fs";
 import path from "path";
 import { Application } from "../types/index.d";
+import { checkType } from "../lib/check";
 
 export default class GernerateLuaService {
     private app: Application;
@@ -86,8 +87,13 @@ export default class GernerateLuaService {
             const firstField = header.shift();
 
             if (!firstField) {
-                throw new Error("检测到csv头部第一列空");
+                console.log("检测到csv头部第一列空");
+                return [];
             }
+
+            header.map((v, i) => {
+                checkType(this.app.typeManager.getType(v), `${catName}第${i}列类型错误:${v.type}`);
+            });
 
             this.getList(list)
                 .map((v: any[]) => {

@@ -1,5 +1,6 @@
 import { ValueTypeInterface } from "../types";
 import TypeString from "./valuetypes/array_string";
+import TypeInvalid from "./valuetypes/invalid";
 
 export default class TypeManager {
     private typeconvert: { [key: string]: ValueTypeInterface } = {};
@@ -14,6 +15,14 @@ export default class TypeManager {
     }
 
     getType(row: { type: string; value: string }) {
-        return this.typeconvert[row.type] ? this.typeconvert[row.type] : this.defaultType;
+        if (!row.type) {
+            return this.defaultType;
+        }
+
+        if (!this.typeconvert[row.type]) {
+            return new TypeInvalid();
+        }
+
+        return this.typeconvert[row.type];
     }
 }
