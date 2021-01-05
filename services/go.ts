@@ -1,4 +1,4 @@
-import { filetrFileType, convertType, filterEmptyName, filterIgnoreName, getHeaderConfig, readCsv, upperCaseFirstW, getIgnores } from "../lib/func";
+import { filetrFileType, filterEmptyName, filterIgnoreName, getHeaderConfig, readCsv, upperCaseFirstW, getIgnores } from "../lib/func";
 import Variables from "../lib/variables";
 import Coder from "../lib/coder";
 import fs from "fs";
@@ -15,9 +15,6 @@ export default class GernerateGoService {
     generateFromDir(dir: string, outFile: string, ignores: string) {
         fs.readdirSync(dir)
             .filter((v) => filetrFileType(v, "csv"))
-            .map((v) => {
-                return v;
-            })
             .map((v) => {
                 return path.join(dir, v);
             })
@@ -39,7 +36,7 @@ export default class GernerateGoService {
                 .filter(filterEmptyName)
                 .filter((v) => filterIgnoreName(v, ignores))
                 .map((v) => {
-                    return "    " + upperCaseFirstW(v.name) + "  " + convertType(v.type);
+                    return "    " + upperCaseFirstW(v.name) + "  " + this.app.typeManager.getType(v).toValue("gostruct", v.value);
                 })
                 .join("\n");
 

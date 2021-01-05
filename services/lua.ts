@@ -1,4 +1,4 @@
-import { convertTypeValue, filetrFileType, filterIgnoreName, filterInValidName, getHeaderConfig, getIgnores, isDir, objValues, readCsv } from "../lib/func";
+import { filetrFileType, filterIgnoreName, filterInValidName, getHeaderConfig, getIgnores, isDir, objValues, readCsv } from "../lib/func";
 import Variables from "../lib/variables";
 import Coder from "../lib/coder";
 import fs from "fs";
@@ -82,15 +82,24 @@ export default class GernerateLuaService {
         }
 
         return readCsv(filePath).then((list) => {
+            const header = getHeaderConfig(list);
+            const firstField = header.shift();
+
+            if (!firstField) {
+                throw new Error("检测到csv头部第一列空");
+            }
+
             this.getList(list)
                 .map((v: any[]) => {
                     return v
                         .filter(filterInValidName)
                         .filter((v) => filterIgnoreName(v, ignores))
-                        .reduce((accumulator, v) => Object.assign(accumulator, { [v.name]: convertTypeValue(v) }), {});
+                        .reduce((accumulator, v) => {
+                            return Object.assign(accumulator, { [v.name]: this.app.typeManager.getType(v).toValue("json", v.value) });
+                        }, {});
                 })
                 .map((v) => {
-                    redisCommandList.push(`redis.call('set', key .. '${catName}_${v.id}', '${JSON.stringify(v)}')`);
+                    redisCommandList.push(`redis.call('set', key .. ':${catName}_${v[firstField?.name]}', '${JSON.stringify(v)}')`);
                 });
 
             return redisCommandList;

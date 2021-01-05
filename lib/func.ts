@@ -47,26 +47,6 @@ export function objValues(obj: { [key: string]: any }) {
     });
 }
 
-export function convertType(customType: string) {
-    switch (customType) {
-        case "int":
-            return "int32";
-        default:
-            return "string";
-    }
-}
-
-export function convertTypeValue(v: { type: string; value: string }) {
-    switch (v.type) {
-        case "int":
-            return isNaN(parseInt(v.value)) ? v.value : parseInt(v.value);
-        case "float":
-            return isNaN(parseFloat(v.value)) ? v.value : parseFloat(v.value);
-        default:
-            return v.value;
-    }
-}
-
 export async function readCsv(filePath: string) {
     return csv().fromFile(filePath, {
         encoding: "utf-8",
@@ -92,7 +72,7 @@ export function getHeaderConfig(list: any[]) {
         return {
             name: v,
             type: types[i],
-            val: "",
+            value: "",
         };
     });
 }

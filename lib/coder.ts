@@ -1,5 +1,4 @@
 import Variables from "./variables";
-import fs from "fs";
 
 export default class Coder {
     getTemplateContent(lang: "go" | "lua") {
