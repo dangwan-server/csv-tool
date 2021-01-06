@@ -1,27 +1,47 @@
 import Variables from "./variables";
 
+type TypeTargetCode = "go" | "lua" | "gofunbody" | "gogetter";
+
 export default class Coder {
-    getTemplateContent(lang: "go" | "lua") {
+    getTemplateContent(lang: TypeTargetCode) {
         switch (lang) {
             case "lua":
                 return `
-local key = "dangwan-kapai-config-2021"
+local key = "{$cache_key}"
 {$list}
 `;
             case "go":
-                return `
+                return `package {$package} 
+
 type {$name} struct {
-
 {$prototype}
-
 }
+`;
+            case "gofunbody":
+                return `func Get{$name}(id string) *{$name}{
+	result := busi.GetStruct("{$cat_name}", id, &{$name}{})
+	if result == nil {
+		return nil
+	}
+
+	return result.(*{$name})
+}
+`;
+            case "gogetter":
+                return `package configuration
+
+import (
+	"game/busi"
+)
+
+{$funcs}
 `;
             default:
                 return "not support";
         }
     }
 
-    generate(lang: "go" | "lua", variables: Variables) {
+    generate(lang: TypeTargetCode, variables: Variables) {
         let result = this.getTemplateContent(lang);
 
         variables.keys().map((key) => {

@@ -1,4 +1,4 @@
-import { filetrFileType, filterEmptyName, filterIgnoreName, getHeaderConfig, readCsv, upperCaseFirstW, getIgnores } from "../lib/func";
+import { filetrFileType, filterIgnoreName, getHeaderConfig, readCsv, upperCaseFirstW, getIgnores, filterInValidName } from "../lib/func";
 import Variables from "../lib/variables";
 import Coder from "../lib/coder";
 import fs from "fs";
@@ -8,12 +8,16 @@ import { checkType } from "../lib/check";
 
 export default class GernerateGoService {
     private app: Application;
+    private variables: Variables;
 
-    constructor(app: Application) {
+    constructor(app: Application, varialbes: Variables) {
         this.app = app;
+        this.variables = varialbes;
     }
 
     generateFromDir(dir: string, outFile: string, ignores: string) {
+        const catNames: string[] = [];
+
         fs.readdirSync(dir)
             .filter((v) => filetrFileType(v, "csv"))
             .map((v) => {
@@ -21,13 +25,34 @@ export default class GernerateGoService {
             })
             .map((filePath: string) => {
                 const catName = path.parse(filePath).name;
+
+                catNames.push(catName);
+
                 this.generate(filePath, path.join(outFile, catName + ".go"), getIgnores(ignores, catName));
             });
+
+        this.generateGetterFunction(catNames, outFile);
+    }
+
+    generateGetterFunction(catNames: string[], dir: string) {
+        const coderHandle = new Coder();
+        const variables = this.variables;
+
+        const funcs = catNames.map((catName) => {
+            this.variables.set("name", upperCaseFirstW(catName));
+            this.variables.set("cat_name", catName);
+
+            return coderHandle.generate("gofunbody", variables);
+        });
+
+        variables.set("funcs", funcs.join("\n"));
+
+        const content = coderHandle.generate("gogetter", variables);
+
+        fs.writeFileSync(path.join(dir, "getter.go"), content);
     }
 
     generate(inFile: string, outFile: string, ignores: string[]) {
-        const variables = new Variables();
-
         if (ignores.length) console.log("忽略的字段", ignores);
 
         readCsv(inFile).then((list) => {
@@ -36,21 +61,31 @@ export default class GernerateGoService {
             header.map((v, i) => {
                 checkType(this.app.typeManager.getType(v), `${catName}第${i}列类型错误:${v.type}`);
             });
+            const fieldNames: string[] = [];
 
-            const prototypeStr = header
-                .filter(filterEmptyName)
+            const validFieldsList = header
+                .filter(filterInValidName)
                 .filter((v) => filterIgnoreName(v, ignores))
+                .filter((v) => {
+                    const isNotExist = fieldNames.indexOf(v.name) == -1;
+
+                    fieldNames.push(v.name);
+
+                    return isNotExist;
+                });
+
+            const prototypeStr = validFieldsList
                 .map((v) => {
-                    return "    " + upperCaseFirstW(v.name) + "  " + this.app.typeManager.getType(v).toValue("gostruct", v.value);
+                    return "    " + upperCaseFirstW(v.name) + "  " + this.app.typeManager.getType(v).toValue("gostruct", v.value) + ` \`json:"${v.name}"\``;
                 })
                 .join("\n");
 
-            variables.set("name", catName);
-            variables.set("prototype", prototypeStr);
+            this.variables.set("name", upperCaseFirstW(catName));
+            this.variables.set("prototype", prototypeStr);
 
             const coderHandle = new Coder();
 
-            const goStructContent = coderHandle.generate("go", variables);
+            const goStructContent = coderHandle.generate("go", this.variables);
 
             fs.writeFileSync(outFile, goStructContent);
 

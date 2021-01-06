@@ -5,12 +5,13 @@ import fs from "fs";
 import path from "path";
 import { Application } from "../types/index.d";
 import { checkType } from "../lib/check";
-
 export default class GernerateLuaService {
     private app: Application;
+    private variables: Variables;
 
-    constructor(app: Application) {
+    constructor(app: Application, variables: Variables) {
         this.app = app;
+        this.variables = variables;
     }
 
     private getList(list: any[]) {
@@ -63,13 +64,11 @@ export default class GernerateLuaService {
             return;
         }
 
-        const variables = new Variables();
-
-        variables.set("list", redisCommandList.join("\n"));
+        this.variables.set("list", redisCommandList.join("\n"));
 
         const targetFile = isDir(outFile) ? path.join(outFile, "redis.lua") : outFile;
         const coderHandle = new Coder();
-        const resultContent = coderHandle.generate("lua", variables);
+        const resultContent = coderHandle.generate("lua", this.variables);
 
         fs.writeFileSync(targetFile, resultContent);
     }

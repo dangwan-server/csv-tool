@@ -70,7 +70,7 @@ export function getHeaderConfig(list: any[]) {
     const types = objValues(list[1]);
     return names.map((v, i) => {
         return {
-            name: v,
+            name: v.replace(/\s+/g, ""),
             type: types[i],
             value: "",
         };

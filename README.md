@@ -54,10 +54,18 @@ cli.exe ... ignore=ignore.json
 
 ## Example 
 
+### 转换excel->csv
+
 - 批量转换excel文件 
 
 ```shell 
 cli-win.exe conv i=C:\Users\DeskTop\excel o=C:\Users\DistTop\csv
+```
+
+### 生成go实体
+
+```shell
+cli-win.exe ggo i={csv文件} o={生成go文件} package={go包名称}
 ```
 
 - 批量生成go实体文件 
@@ -75,6 +83,11 @@ cli-win.exe ggo i=C:\Users\DistTop\csv\item.csv o=C:\Users\DistTop\go\item_costo
 cli-win.exe ggo i=C:\Users\DistTop\csv\item.csv o=C:\Users\DistTop\go ignore=name,type
 ```
 
+### 生成lua脚本
+
+```shell
+cli-win.exe glua i={csv文件} o={生成lua脚本} cache_key={缓存前缀}
+```
 
 - 扫描csv录生成lua脚本
 

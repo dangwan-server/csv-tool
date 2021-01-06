@@ -2,6 +2,7 @@ import HanldeAbstract from "../lib/handle";
 import { isDir, isFile } from "../lib/func";
 import path from "path";
 import GernerateGoService from "../services/go";
+import Variables from "../lib/variables";
 
 export default class GeneralGoHandle extends HanldeAbstract {
     private checkOutFile(outFile: string) {
@@ -23,12 +24,16 @@ export default class GeneralGoHandle extends HanldeAbstract {
     }
 
     handle() {
-        const inFile = path.resolve(this.input.get("i") || "");
-        const outFile = path.resolve(this.input.get("o") || "");
+        const inFile = path.resolve(this.input.get("i", ""));
+        const outFile = path.resolve(this.input.get("o", ""));
+        const packageName = this.input.get("package", "structs");
+        const variables = new Variables();
 
         this.checkOutFile(outFile);
 
-        const handle = new GernerateGoService(this.app);
+        variables.set("package", packageName);
+
+        const handle = new GernerateGoService(this.app, variables);
 
         if (this.isSignle(inFile)) {
             if (!isFile(inFile)) {

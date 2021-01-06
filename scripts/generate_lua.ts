@@ -2,6 +2,7 @@ import HanldeAbstract from "../lib/handle";
 import { isDir, isFile } from "../lib/func";
 import path from "path";
 import GernerateLuaService from "../services/lua";
+import Variables from "../lib/variables";
 
 export default class GeneralLuaHandle extends HanldeAbstract {
     private checkOutFile(outFile: string) {
@@ -27,10 +28,14 @@ export default class GeneralLuaHandle extends HanldeAbstract {
     handle() {
         const inFile = path.resolve(this.input.get("i") || "");
         const outFile = path.resolve(this.input.get("o") || "");
+        const cacheKey = this.input.get("cache_key", "game-config-2021");
+        const variables = new Variables();
 
         this.checkOutFile(outFile);
 
-        const handle = new GernerateLuaService(this.app);
+        variables.set("cache_key", cacheKey);
+
+        const handle = new GernerateLuaService(this.app, variables);
 
         if (this.isSignle(inFile)) {
             if (!isFile(inFile)) {
