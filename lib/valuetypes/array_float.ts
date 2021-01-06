@@ -1,9 +1,9 @@
 import { TypeValueTarget, ValueTypeInterface } from "../../types";
-import { toInt } from "../value";
+import { toFloat } from "../value";
 
-export default class TypeArrayInt implements ValueTypeInterface {
+export default class TypeArrayFloat implements ValueTypeInterface {
     getName() {
-        return "array_int";
+        return "array_float";
     }
 
     toValue(target: TypeValueTarget, value: string) {
@@ -12,9 +12,9 @@ export default class TypeArrayInt implements ValueTypeInterface {
                 return value
                     .split("|")
                     .filter((v) => v != "")
-                    .map(toInt);
+                    .map(toFloat);
             case "gostruct":
-                return "[]int";
+                return "[]float32";
         }
     }
 }

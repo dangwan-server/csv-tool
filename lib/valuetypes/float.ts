@@ -1,17 +1,17 @@
 import { TypeValueTarget, ValueTypeInterface } from "../../types";
-import { toInt } from "../value";
+import { toFloat } from "../value";
 
-export default class TypeInt implements ValueTypeInterface {
+export default class TypeFloat implements ValueTypeInterface {
     getName() {
-        return "int";
+        return "float";
     }
 
     toValue(target: TypeValueTarget, value: string) {
         switch (target) {
             case "json":
-                return toInt(value);
+                return toFloat(value);
             case "gostruct":
-                return "int32";
+                return "float32";
         }
     }
 }
