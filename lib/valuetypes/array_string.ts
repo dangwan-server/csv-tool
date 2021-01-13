@@ -10,7 +10,7 @@ export default class TypeArrayString implements ValueTypeInterface {
             case "json":
                 return value.split("|").filter((v) => v != "");
             case "gostruct":
-                return "[]int";
+                return "[]string";
         }
     }
 }

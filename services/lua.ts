@@ -94,7 +94,7 @@ export default class GernerateLuaService {
                 checkType(this.app.typeManager.getType(v), `${catName}第${i}列类型错误:${v.type}`);
             });
 
-            this.getList(list)
+            const allLines = this.getList(list)
                 .map((v: any[]) => {
                     return v
                         .filter(filterInValidName)
@@ -103,9 +103,19 @@ export default class GernerateLuaService {
                             return Object.assign(accumulator, { [v.name]: this.app.typeManager.getType(v).toValue("json", v.value) });
                         }, {});
                 })
-                .map((v) => {
-                    redisCommandList.push(`redis.call('set', key .. ':${catName}_${v[firstField?.name]}', '${JSON.stringify(v)}')`);
+                .filter((v: any) => {
+                    const delVal = v.del;
+                    if (typeof v.del != "undefined") {
+                        delete v.del;
+                    }
+                    return delVal != 1;
                 });
+
+            allLines.map((v) => {
+                redisCommandList.push(`redis.call('set', key .. ':${catName}_${v[firstField?.name]}', '${JSON.stringify(v)}')`);
+            });
+
+            redisCommandList.push(`redis.call('set', key .. ':${catName}', '${JSON.stringify(allLines)}')`);
 
             return redisCommandList;
         });

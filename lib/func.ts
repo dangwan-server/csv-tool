@@ -15,6 +15,24 @@ export function isFileExists(filePath: string) {
     return fs.existsSync(filePath);
 }
 
+export function readXlsx(inFile: string) {
+    if (!isFile(inFile)) {
+        throw new Error("文件不存在:" + inFile);
+    }
+
+    return xlsx.readFile(inFile);
+}
+
+export function xlsxWorkbookWriteCsv(workbook: xlsx.WorkBook, outFile: string) {
+    const result = xlsx.write(workbook, {
+        bookType: "csv",
+        compression: true,
+        type: "string",
+    });
+
+    fs.writeFileSync(outFile, result);
+}
+
 export function convExcelToCsv(inFile: string, outFile: string) {
     if (!isFile(inFile)) {
         console.warn("文件不存在:" + inFile);

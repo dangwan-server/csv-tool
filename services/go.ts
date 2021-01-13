@@ -65,7 +65,7 @@ export default class GernerateGoService {
 
             const validFieldsList = header
                 .filter(filterInValidName)
-                .filter((v) => filterIgnoreName(v, ignores))
+                .filter((v) => filterIgnoreName(v, ignores) && v.name != "del")
                 .filter((v) => {
                     const isNotExist = fieldNames.indexOf(v.name) == -1;
 
