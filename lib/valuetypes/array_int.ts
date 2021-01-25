@@ -9,10 +9,12 @@ export default class TypeArrayInt implements ValueTypeInterface {
     toValue(target: TypeValueTarget, value: string) {
         switch (target) {
             case "json":
-                return value
-                    .split("|")
-                    .filter((v) => v != "")
-                    .map(toInt);
+                return value == "0"
+                    ? []
+                    : value
+                          .split("|")
+                          .filter((v) => v != "")
+                          .map(toInt);
             case "gostruct":
                 return "[]int";
         }

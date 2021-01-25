@@ -9,10 +9,12 @@ export default class TypeArrayFloat implements ValueTypeInterface {
     toValue(target: TypeValueTarget, value: string) {
         switch (target) {
             case "json":
-                return value
-                    .split("|")
-                    .filter((v) => v != "")
-                    .map(toFloat);
+                return value == "0"
+                    ? []
+                    : value
+                          .split("|")
+                          .filter((v) => v != "")
+                          .map(toFloat);
             case "gostruct":
                 return "[]float32";
         }

@@ -55,6 +55,11 @@ export function filetrFileType(filePath: string, ext: "csv" | "xlsx") {
     return path.parse(filePath).ext == "." + ext;
 }
 
+export function filetrSufixName(filePath: string, ext: string) {
+    ext = "." + ext;
+    return filePath.substring(filePath.length - ext.length) == ext;
+}
+
 export function upperCaseFirstW(str: string) {
     return str[0].toUpperCase() + str.substr(1);
 }

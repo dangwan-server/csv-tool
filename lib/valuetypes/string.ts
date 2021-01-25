@@ -8,7 +8,7 @@ export default class TypeString implements ValueTypeInterface {
     toValue(target: TypeValueTarget, value: string) {
         switch (target) {
             case "json":
-                return value;
+                return value == "0" ? "" : value;
             case "gostruct":
                 return "string";
         }
