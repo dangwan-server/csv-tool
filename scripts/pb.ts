@@ -70,6 +70,19 @@ class VarHeapManage {
     }
 }
 
+function isGoSystemType(sType: string) {
+    return ["int32", "byte", "[]byte", "string"].indexOf(sType) != -1;
+}
+
+function getStructNameFromType(sType: string) {
+    if (isGoSystemType(sType)) {
+        return null;
+    }
+
+    const preg = /(\[\])?(.+)/;
+    return sType.replace(preg, "$2");
+}
+
 function isComment(val: string) {
     return val.substring(0, 2) == "//";
 }
@@ -81,7 +94,7 @@ function mapCount(count: { total: number }) {
     };
 }
 
-function formatStructProperty(content: string, structName: string) {
+function formatStructProperty(content: string, structName: string, childStructs: { name: string; propertys: any }[]) {
     const structReg = new RegExp(`type ${structName} struct {\\n(.*?)\\n}`, "ms");
 
     const matched = content.match(structReg);
@@ -118,9 +131,46 @@ function formatStructProperty(content: string, structName: string) {
         });
     }
 
-    const propertys = result.filter((v) => v.name.substring(0, 4) != "XXX_");
+    const propertys = result
+        .filter((v) => v.name.substring(0, 4) != "XXX_")
+        .map((v) => {
+            v.type = v.type.replace("*", "");
+            return v;
+        });
+
+    propertys.forEach((v) => {
+        const childStructName = getStructNameFromType(v.type);
+        if (childStructName) {
+            childStructs.push({
+                name: childStructName,
+                propertys: formatStructProperty(content, childStructName, childStructs),
+            });
+        }
+    });
 
     return propertys;
+}
+
+function getStructMessages(content: string, structName: string, rqType: "rq" | "rp") {
+    const childStructs: any[] = [];
+    const pts = formatStructProperty(content, structName, childStructs);
+    let goStructName = structName;
+
+    if (rqType == "rq") {
+        goStructName = goStructName.replace(/(Req)|(Request)$/, "") + "C2S";
+    }
+
+    if (rqType == "rp") {
+        goStructName = goStructName.replace(/Reply$/, "") + "S2C";
+    }
+
+    childStructs.push({
+        name: goStructName,
+        hasPrefix: true,
+        propertys: pts,
+    });
+
+    return childStructs;
 }
 
 export default class PbHandle extends HanldeAbstract {
@@ -148,8 +198,8 @@ export default class PbHandle extends HanldeAbstract {
             .map((v) => {
                 const filePath = path.join(inFile, v);
                 const serviceStrctReg = /type\s+\w+Client\s+interface\s+{\n(.*?)\n}/s;
-                const structRequestStructReg = /in\s\*(\w+),/;
-                const structReplyStructReg = /\(\*(\w+),/;
+                const structRequestStructReg = /in\s\*(.*?),/;
+                const structReplyStructReg = /\(\*(.*?),/;
                 const packageName = v.substring(0, v.indexOf("."));
 
                 const content = fs.readFileSync(filePath, {
@@ -197,43 +247,50 @@ export default class PbHandle extends HanldeAbstract {
                     })
                     .filter((v) => v.rq != "");
 
-                const messageStructs: { name: string; propertys: MessageStructProperty[] }[] = [];
+                const messageStructs: { name: string; hasPrefix: false; propertys: MessageStructProperty[] }[] = [];
 
                 structs.map((v) => {
-                    const rqPropertys = formatStructProperty(content, v.rq);
-                    const rpPropertys = formatStructProperty(content, v.rp);
+                    if (!/^common\./.test(v.rq)) {
+                        messageStructs.push(...getStructMessages(content, v.rq, "rq"));
+                    }
 
-                    const rqName = v.rq.replace(/(Req)|(Request)$/, "") + "C2S";
-                    const rpName = v.rp.replace(/Reply$/, "") + "S2C";
-
-                    messageStructs.push({
-                        name: rqName,
-                        propertys: rqPropertys,
-                    });
-
-                    messageStructs.push({
-                        name: rpName,
-                        propertys: rpPropertys,
-                    });
+                    if (!/^common\./.test(v.rp)) {
+                        messageStructs.push(...getStructMessages(content, v.rp, "rp"));
+                    }
                 });
 
                 let msgStructContents = [];
+                const uniqueMessageName: string[] = [];
 
-                msgStructContents = messageStructs.map((v) => {
-                    const messageContent = [];
-                    const structName = upperCaseFirstW(packageName) + upperCaseFirstW(v.name);
+                msgStructContents = messageStructs
+                    .map((v) => {
+                        if (uniqueMessageName.indexOf(v.name) != -1) {
+                            return "";
+                        }
 
-                    messageContent.push(`type ${structName} struct {`);
-                    messageContent.push(
-                        ...v.propertys.map((v) => {
-                            return `\t${v.name} ${v.type} ${v.comment}`;
-                        })
-                    );
+                        const messageContent = [];
+                        let structName = upperCaseFirstW(v.name);
 
-                    messageContent.push("}");
+                        if (v.hasPrefix) {
+                            structName = upperCaseFirstW(packageName) + structName;
+                        }
 
-                    return messageContent.join("\n");
-                });
+                        messageContent.push(`type ${structName} struct {`);
+                        messageContent.push(
+                            ...v.propertys.map((v) => {
+                                const comment = v.comment.replace(/^\/\/\s?([^\s])/, "// $1");
+
+                                return `\t${v.name} ${v.type} ${comment}`;
+                            })
+                        );
+
+                        messageContent.push("}");
+
+                        uniqueMessageName.push(v.name);
+
+                        return messageContent.join("\n");
+                    })
+                    .filter((v) => v != "");
 
                 msgStructContents.unshift(`package ${outBasePackageName}`);
 
