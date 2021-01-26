@@ -179,9 +179,8 @@ export default class PbHandle extends HanldeAbstract {
     }
 
     handle() {
-        const inFile = "/Users/lixingbo/golang/company/dangwan/kapai/pb/github.com/dangwan-server/pb/package";
-        const outBasePackageName = "params2";
-        const outFile = "/Users/lixingbo/golang/company/dangwan/kapai/pb/" + outBasePackageName;
+        const inFile = path.resolve(this.input.get("i", ""));
+        const outFile = path.resolve(this.input.get("o", ""));
         const count = { total: 0 };
 
         if (!isDir(inFile)) {
@@ -191,6 +190,8 @@ export default class PbHandle extends HanldeAbstract {
         if (!isDir(outFile)) {
             throw new Error("out必须是目录");
         }
+
+        const outBasePackageName = path.basename(outFile);
 
         fs.readdirSync(inFile)
             .filter((v) => filetrSufixName(v, "pb.go"))
