@@ -19,7 +19,7 @@ type {$name} struct {
 `;
             case "gofunbody":
                 return `func Get{$name}(id string) *{$name}{
-	result := busi.GetStruct("{$cat_name}", id, &{$name}{})
+	result := GetStruct("{$cat_name}", id, &{$name}{})
 	if result == nil {
 		return nil
 	}
@@ -28,11 +28,7 @@ type {$name} struct {
 }
 `;
             case "gogetter":
-                return `package configuration
-
-import (
-	"game/busi"
-)
+                return `package {$package} 
 
 {$funcs}
 `;

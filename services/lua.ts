@@ -1,10 +1,17 @@
-import { filetrFileType, filterIgnoreName, filterInValidName, getHeaderConfig, getIgnores, isDir, objValues, readCsv } from "../lib/func";
+import { filetrFileType, filterIgnoreName, filterInValidName, getHeaderConfig, getIgnores, isDir, objValues, readXlsxToJson } from "../lib/func";
 import Variables from "../lib/variables";
 import Coder from "../lib/coder";
 import fs from "fs";
 import path from "path";
 import { Application } from "../types/index.d";
 import { checkType } from "../lib/check";
+
+type typeListData = {
+    name: string;
+    type: string;
+    value: string | number;
+};
+
 export default class GernerateLuaService {
     private app: Application;
     private variables: Variables;
@@ -14,7 +21,7 @@ export default class GernerateLuaService {
         this.variables = variables;
     }
 
-    private getList(list: any[]) {
+    private getList(list: any[]): typeListData[][] {
         const header = getHeaderConfig(list);
 
         return list
@@ -81,7 +88,7 @@ export default class GernerateLuaService {
             console.log(`${catName}被忽略的字段`, ignores);
         }
 
-        return readCsv(filePath).then((list) => {
+        return readXlsxToJson(filePath).then((list) => {
             const header = getHeaderConfig(list);
             const firstField = header.shift();
 
@@ -95,12 +102,12 @@ export default class GernerateLuaService {
             });
 
             const allLines = this.getList(list)
-                .map((v: any[]) => {
+                .map((v) => {
                     return v
                         .filter(filterInValidName)
                         .filter((v) => filterIgnoreName(v, ignores))
                         .reduce((accumulator, v) => {
-                            return Object.assign(accumulator, { [v.name]: this.app.typeManager.getType(v).toValue("json", v.value) });
+                            return Object.assign(accumulator, { [v.name]: this.app.typeManager.getType(v).toValue("json", v.value + "") });
                         }, {});
                 })
                 .filter((v: any) => {
@@ -111,8 +118,8 @@ export default class GernerateLuaService {
                     return delVal != 1;
                 });
 
-            allLines.map((v) => {
-                redisCommandList.push(`redis.call('set', key .. ':${catName}_${v[firstField?.name]}', '${JSON.stringify(v)}')`);
+            allLines.map((v: any) => {
+                redisCommandList.push(`redis.call('set', key .. ':${catName}:${v[firstField?.name]}', '${JSON.stringify(v)}')`);
             });
 
             redisCommandList.push(`redis.call('set', key .. ':${catName}', '${JSON.stringify(allLines)}')`);

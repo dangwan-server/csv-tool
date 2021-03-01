@@ -14,7 +14,7 @@ export default class TypeManager {
         this.typeconvert[typeconvert.getName()] = typeconvert;
     }
 
-    getType(row: { type: string; value: string }) {
+    getType(row: { type: string; value: string | number }) {
         if (!row.type) {
             return this.defaultType;
         }

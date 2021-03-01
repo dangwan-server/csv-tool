@@ -1,7 +1,9 @@
 import HanldeAbstract from "../lib/handle";
 import path from "path";
 import fs from "fs";
-import { isDir, filetrSufixName, upperCaseFirstW } from "../lib/func";
+import { isDir, filetrSufixName, upperCaseFirstW, mapCount, isComment } from "../lib/func";
+import { VarHeapManage } from "../lib/heap";
+import { getStructNameFromType } from "../lib/go/func";
 
 type MessageStructProperty = {
     name: string;
@@ -9,90 +11,17 @@ type MessageStructProperty = {
     comment: string;
 };
 
-class Heap {
-    items: string[] = [];
+type MessageInfo = {
+    name: string;
+    comment: string;
+};
 
-    push(val: string) {
-        this.items.push(val);
-    }
-
-    pop(): string {
-        return this.items.pop() || "";
-    }
-
-    len() {
-        return this.items.length;
-    }
-
-    isEmpty() {
-        return this.len() == 0;
-    }
-}
-
-class VarHeapManage {
-    varHeap: Heap;
-    commentHeap: Heap;
-    couter = 0;
-
-    constructor() {
-        this.varHeap = new Heap();
-        this.commentHeap = new Heap();
-    }
-
-    push(val: string) {
-        if (this.couter % 2 == 0) {
-            //本来应该是注释的
-            if (isComment(val)) {
-                this.commentHeap.push(val);
-            } else {
-                this.commentHeap.push("");
-                this.varHeap.push(val);
-                this.couter++;
-            }
-        } else {
-            this.varHeap.push(val);
-        }
-
-        this.couter++;
-    }
-
-    pop() {
-        const varLine = this.varHeap.pop();
-        const commentLine = this.commentHeap.pop();
-        return {
-            varLine,
-            commentLine,
-        };
-    }
-
-    isEmpty() {
-        return this.varHeap.isEmpty();
-    }
-}
-
-function isGoSystemType(sType: string) {
-    return ["int32", "byte", "[]byte", "string"].indexOf(sType) != -1;
-}
-
-function getStructNameFromType(sType: string) {
-    if (isGoSystemType(sType)) {
-        return null;
-    }
-
-    const preg = /(\[\])?(.+)/;
-    return sType.replace(preg, "$2");
-}
-
-function isComment(val: string) {
-    return val.substring(0, 2) == "//";
-}
-
-function mapCount(count: { total: number }) {
-    return (v: any) => {
-        count.total++;
-        return v;
-    };
-}
+type ServiceInfo = {
+    name: string;
+    rq: MessageInfo;
+    rp: MessageInfo;
+    comment: string;
+};
 
 function formatStructProperty(content: string, structName: string, childStructs: { name: string; propertys: any }[]) {
     const structReg = new RegExp(`type ${structName} struct {\\n(.*?)\\n}`, "ms");
@@ -108,17 +37,17 @@ function formatStructProperty(content: string, structName: string, childStructs:
 
     const varHeap = new VarHeapManage();
 
-    lines.map((v) => {
-        varHeap.push(v);
-    });
-
-    let lineResult;
+    lines
+        .filter((v) => v.trim() != "" && v != "//----@client")
+        .map((v) => {
+            varHeap.push(v);
+        });
 
     const result: MessageStructProperty[] = [];
 
     while (!varHeap.isEmpty()) {
-        lineResult = varHeap.pop();
-        var matchedVar = lineResult.varLine.match(nameReg);
+        let lineResult = varHeap.pop();
+        let matchedVar = lineResult.varLine.match(nameReg);
 
         if (!matchedVar) {
             continue;
@@ -151,20 +80,16 @@ function formatStructProperty(content: string, structName: string, childStructs:
     return propertys;
 }
 
-function getStructMessages(content: string, structName: string, rqType: "rq" | "rp") {
+function getStructMessages(content: string, structInfo: MessageInfo, igNoreComment = false) {
     const childStructs: any[] = [];
-    const pts = formatStructProperty(content, structName, childStructs);
-    let goStructName = structName;
 
-    if (rqType == "rq") {
-        goStructName = goStructName.replace(/(Req)|(Request)$/, "") + "C2S";
-    }
+    const pts = formatStructProperty(content, structInfo.name, childStructs);
+    let goStructName = structInfo.name.replace(/(Req)|(Request)$/, "C2S");
 
-    if (rqType == "rp") {
-        goStructName = goStructName.replace(/Reply$/, "") + "S2C";
-    }
+    goStructName = goStructName.replace(/Reply$/, "S2C");
 
     childStructs.push({
+        comment: igNoreComment ? "" : structInfo.comment,
         name: goStructName,
         hasPrefix: true,
         propertys: pts,
@@ -174,10 +99,6 @@ function getStructMessages(content: string, structName: string, rqType: "rq" | "
 }
 
 export default class PbHandle extends HanldeAbstract {
-    private isSignle(inFile: string) {
-        return path.parse(inFile).ext != "";
-    }
-
     handle() {
         const inFile = path.resolve(this.input.get("i", ""));
         const outFile = path.resolve(this.input.get("o", ""));
@@ -225,38 +146,74 @@ export default class PbHandle extends HanldeAbstract {
                 // 重命名参数对象的后缀
                 // 组合成go结构体内容
 
-                const structs: { rq: string; rp: string }[] = lines
+                const structs: ServiceInfo[] = lines
                     .map((v) => {
                         if (v[0] == "\t") {
                             return v.substring(1);
                         }
                         return v;
                     })
-                    .filter((v) => v[0] + v[1] != "//")
-                    .map((v) => {
-                        const requestMatched = v.match(structRequestStructReg);
-                        const replyMatched = v.match(structReplyStructReg);
+                    .map((line, k) => {
+                        // 是否是注释
+                        let isCommentLine = isComment(line);
+                        // 注释内容
+                        let comment = "";
 
-                        if (!replyMatched || !requestMatched) {
-                            return { rq: "", rp: "" };
+                        if (k > 0) {
+                            const prevLine = lines[k - 1];
+                            if (isComment(prevLine)) {
+                                comment = prevLine.trim().substring(2);
+                            }
                         }
 
                         return {
-                            rq: requestMatched[1],
-                            rp: replyMatched[1],
+                            content: line,
+                            isComment: isCommentLine,
+                            comment: comment,
                         };
                     })
-                    .filter((v) => v.rq != "");
+                    .filter((v) => {
+                        return !v.isComment;
+                    })
+                    .filter((v, _) => {
+                        // 有@server注释的是仅供服务端调用的方法
+                        return v.comment.indexOf("@server") != 0;
+                    })
+                    .map((v) => {
+                        const requestMatched = v.content.match(structRequestStructReg);
+                        const replyMatched = v.content.match(structReplyStructReg);
 
-                const messageStructs: { name: string; hasPrefix: false; propertys: MessageStructProperty[] }[] = [];
+                        if (!replyMatched || !requestMatched) {
+                            return Object.assign(v, { requestName: "", replyName: "" });
+                        }
+
+                        return Object.assign(v, { requestName: requestMatched[1], replyName: replyMatched[1] });
+                    })
+                    .filter((v) => v.requestName != "")
+                    .map((v) => {
+                        return {
+                            name: v.requestName.replace(/(Req|Reply)$/, ""),
+                            comment: v.comment,
+                            rq: {
+                                name: v.requestName,
+                                comment: v.comment,
+                            },
+                            rp: {
+                                name: v.replyName,
+                                comment: v.comment,
+                            },
+                        };
+                    });
+
+                const messageStructs: { comment: ""; name: string; hasPrefix: false; propertys: MessageStructProperty[] }[] = [];
 
                 structs.map((v) => {
-                    if (!/^common\./.test(v.rq)) {
-                        messageStructs.push(...getStructMessages(content, v.rq, "rq"));
+                    if (!/^common\./.test(v.rq.name)) {
+                        messageStructs.push(...getStructMessages(content, v.rq));
                     }
 
-                    if (!/^common\./.test(v.rp)) {
-                        messageStructs.push(...getStructMessages(content, v.rp, "rp"));
+                    if (!/^common\./.test(v.rp.name)) {
+                        messageStructs.push(...getStructMessages(content, v.rp, true));
                     }
                 });
 
@@ -272,8 +229,8 @@ export default class PbHandle extends HanldeAbstract {
                         const messageContent = [];
                         let structName = upperCaseFirstW(v.name);
 
-                        if (v.hasPrefix) {
-                            structName = upperCaseFirstW(packageName) + structName;
+                        if (v.comment) {
+                            messageContent.push(`//${v.comment}`);
                         }
 
                         messageContent.push(`type ${structName} struct {`);

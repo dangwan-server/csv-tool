@@ -4,6 +4,8 @@ import path from "path";
 import GernerateLuaService from "../services/lua";
 import Variables from "../lib/variables";
 
+const cacheConfigPrefix = "game_config";
+
 export default class GeneralLuaHandle extends HanldeAbstract {
     private checkOutFile(outFile: string) {
         const targetIsDir = (pathName: string) => {
@@ -28,7 +30,7 @@ export default class GeneralLuaHandle extends HanldeAbstract {
     handle() {
         const inFile = path.resolve(this.input.get("i") || "");
         const outFile = path.resolve(this.input.get("o") || "");
-        const cacheKey = this.input.get("cache_key", "game-config-2021");
+        const cacheKey = this.input.get("cache_key", cacheConfigPrefix);
         const variables = new Variables();
 
         this.checkOutFile(outFile);

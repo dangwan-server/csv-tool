@@ -15,6 +15,18 @@ export function isFileExists(filePath: string) {
     return fs.existsSync(filePath);
 }
 
+export function readXlsxToJson(inFile: string): Promise<any[]> {
+    const workbook = readXlsx(inFile);
+    let sheetNames = workbook.SheetNames; //获取表明
+
+    return new Promise((r) => {
+        let sheet = workbook.Sheets[sheetNames[0]]; //通过表明得到表对象
+        let list: any[] = xlsx.utils.sheet_to_json(sheet);
+
+        r(list);
+    });
+}
+
 export function readXlsx(inFile: string) {
     if (!isFile(inFile)) {
         throw new Error("文件不存在:" + inFile);
@@ -124,6 +136,17 @@ export function getIgnores(ignorePath: string, itemName: string): string[] {
     return config[itemName] || [];
 }
 
-export function filterDefaultPointDirName(fileName: string) {
+export function isSystemDirName(fileName: string) {
     return fileName == "." || fileName == "..";
+}
+
+export function isComment(val: string) {
+    return val.trim().substring(0, 2) == "//";
+}
+
+export function mapCount(count: { total: number }) {
+    return (v: any) => {
+        count.total++;
+        return v;
+    };
 }

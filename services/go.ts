@@ -1,4 +1,4 @@
-import { filetrFileType, filterIgnoreName, getHeaderConfig, readCsv, upperCaseFirstW, getIgnores, filterInValidName } from "../lib/func";
+import { filetrFileType, filterIgnoreName, getHeaderConfig, upperCaseFirstW, getIgnores, filterInValidName, readXlsxToJson } from "../lib/func";
 import Variables from "../lib/variables";
 import Coder from "../lib/coder";
 import fs from "fs";
@@ -55,7 +55,7 @@ export default class GernerateGoService {
     generate(inFile: string, outFile: string, ignores: string[]) {
         if (ignores.length) console.log("忽略的字段", ignores);
 
-        readCsv(inFile).then((list) => {
+        readXlsxToJson(inFile).then((list) => {
             const catName = path.parse(inFile).name;
             const header = getHeaderConfig(list);
             header.map((v, i) => {
@@ -67,6 +67,7 @@ export default class GernerateGoService {
                 .filter(filterInValidName)
                 .filter((v) => filterIgnoreName(v, ignores) && v.name != "del")
                 .filter((v) => {
+                    // 字段去重
                     const isNotExist = fieldNames.indexOf(v.name) == -1;
 
                     fieldNames.push(v.name);
