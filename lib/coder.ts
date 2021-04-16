@@ -26,6 +26,11 @@ type {$name} struct {
 
 	return result.(*{$name})
 }
+
+func Get{$name}List() (list []*{$name}) {
+    GetJsonData("{$cat_name}", &list)
+	return
+}
 `;
             case "gogetter":
                 return `package {$package} 

@@ -11,20 +11,105 @@ export function isDir(filePath: string) {
     return isFileExists(filePath) && fs.statSync(filePath).isDirectory();
 }
 
+export function formatType(typeName: string): string {
+    return typeName.trim();
+}
+
 export function isFileExists(filePath: string) {
     return fs.existsSync(filePath);
 }
 
-export function readXlsxToJson(inFile: string): Promise<any[]> {
+export type TypeRowValue = {
+    isServer: boolean;
+    comment: string;
+    name: string;
+    value: string | number;
+    type: string;
+};
+
+export type XlsxJsonResult = {
+    header: TypeRowValue[];
+    list: TypeRowValue[][];
+};
+
+export function readXlsxToJson(inFile: string): Promise<XlsxJsonResult> {
+    return new Promise((r) => {
+        return r(readXlsxToJsonSync(inFile));
+    });
+}
+
+export function readXlsxToJsonSync(inFile: string): XlsxJsonResult {
     const workbook = readXlsx(inFile);
     let sheetNames = workbook.SheetNames; //获取表明
+    const result: XlsxJsonResult = {
+        header: [],
+        list: [],
+    };
+    let sheet = workbook.Sheets[sheetNames[0]]; //通过表明得到表对象
+    const sheetNameRowNumber = 2; // 作为key的行号
 
-    return new Promise((r) => {
-        let sheet = workbook.Sheets[sheetNames[0]]; //通过表明得到表对象
-        let list: any[] = xlsx.utils.sheet_to_json(sheet);
+    let sheetJsonHeader: any[] = xlsx.utils.sheet_to_json(sheet, { header: 1, defval: "" });
 
-        r(list);
+    if (sheetJsonHeader.length < 4) {
+        console.error(inFile + "内容行数不够");
+        return result;
+    }
+
+    // 去掉没有name字段的列
+    let commentRow = sheetJsonHeader[0].filter((_: any, i: number) => {
+        return sheetJsonHeader[sheetNameRowNumber][i];
     });
+
+    let serverRow = sheetJsonHeader[1].filter((_: any, i: number) => {
+        return sheetJsonHeader[sheetNameRowNumber][i];
+    });
+
+    let sheetJson: any[] = xlsx.utils.sheet_to_json(sheet, {
+        range: sheetNameRowNumber,
+    });
+
+    const valueTypeRow = sheetJson[0];
+
+    result.header = Object.keys(valueTypeRow).map((name, i) => {
+        return {
+            comment: commentRow[i],
+            isServer: serverRow[i] == "common" || serverRow[i] == "server",
+            name: name,
+            type: formatType(valueTypeRow[name]),
+            value: "",
+        };
+    });
+
+    const headerMap: { [key: string]: TypeRowValue } = result.header.reduce((prev: any, v) => {
+        prev[v.name] = v;
+
+        return prev;
+    }, {});
+
+    result.list = sheetJson
+        .filter((_, k) => k > 0)
+        .map((v) => {
+            const currentRow: TypeRowValue[] = [];
+
+            for (let i in v) {
+                // 过滤类型为空的值
+                if (!valueTypeRow[i]) {
+                    continue;
+                }
+
+                currentRow.push({
+                    comment: headerMap[i].comment,
+                    isServer: headerMap[i].isServer,
+                    name: i,
+                    type: formatType(valueTypeRow[i]),
+                    value: v[i],
+                });
+            }
+
+            return currentRow;
+        });
+
+    return result;
 }
 
 export function readXlsx(inFile: string) {
@@ -32,7 +117,7 @@ export function readXlsx(inFile: string) {
         throw new Error("文件不存在:" + inFile);
     }
 
-    return xlsx.readFile(inFile);
+    return xlsx.readFile(inFile, {});
 }
 
 export function xlsxWorkbookWriteCsv(workbook: xlsx.WorkBook, outFile: string) {

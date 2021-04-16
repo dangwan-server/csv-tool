@@ -3,8 +3,20 @@
     "target": "es5",                          
     "module": "commonjs",                    
     "strict": true,
+    "importHelpers": true,
     "esModuleInterop": true,                 
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true 
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+        "@/*": [ "*" ]
+    },
+    "lib": [
+        "esnext",
+        "dom",
+        "dom.iterable",
+        "scripthost"
+    ]
+
   }
 }

@@ -226,6 +226,11 @@ export default class PbHandle extends HanldeAbstract {
                             return "";
                         }
 
+                        // 不需要生成common包的struct
+                        if (/^common\./.test(v.name)) {
+                            return "";
+                        }
+
                         const messageContent = [];
                         let structName = upperCaseFirstW(v.name);
 
@@ -237,8 +242,10 @@ export default class PbHandle extends HanldeAbstract {
                         messageContent.push(
                             ...v.propertys.map((v) => {
                                 const comment = v.comment.replace(/^\/\/\s?([^\s])/, "// $1");
+                                // 把common.替换掉
+                                const attrName = v.type.replace("common.", "");
 
-                                return `\t${v.name} ${v.type} ${comment}`;
+                                return `\t${v.name} ${attrName} ${comment}`;
                             })
                         );
 

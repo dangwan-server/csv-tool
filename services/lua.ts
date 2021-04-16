@@ -4,13 +4,6 @@ import Coder from "../lib/coder";
 import fs from "fs";
 import path from "path";
 import { Application } from "../types/index.d";
-import { checkType } from "../lib/check";
-
-type typeListData = {
-    name: string;
-    type: string;
-    value: string | number;
-};
 
 export default class GernerateLuaService {
     private app: Application;
@@ -21,24 +14,8 @@ export default class GernerateLuaService {
         this.variables = variables;
     }
 
-    private getList(list: any[]): typeListData[][] {
-        const header = getHeaderConfig(list);
-
-        return list
-            .filter((_, k) => k > 1)
-            .map((line) => {
-                return objValues(line).map((value, i) => {
-                    return {
-                        name: header[i].name,
-                        type: header[i].type,
-                        value: value,
-                    };
-                });
-            });
-    }
-
     generateFromDir(dir: string, outFile: string, ignores: string) {
-        const files = fs.readdirSync(dir).filter((v) => filetrFileType(v, "csv"));
+        const files = fs.readdirSync(dir).filter((v) => filetrFileType(v, "xlsx"));
         const total = files.length;
         let redisCommandList: string[] = [];
         let counter = 0;
@@ -88,22 +65,17 @@ export default class GernerateLuaService {
             console.log(`${catName}被忽略的字段`, ignores);
         }
 
-        return readXlsxToJson(filePath).then((list) => {
-            const header = getHeaderConfig(list);
-            const firstField = header.shift();
+        return readXlsxToJson(filePath).then((result) => {
+            const firstField = result.header[0];
 
-            if (!firstField) {
-                console.log("检测到csv头部第一列空");
+            if (result.header.filter((v) => v.isServer).length == 0) {
                 return [];
             }
 
-            header.map((v, i) => {
-                checkType(this.app.typeManager.getType(v), `${catName}第${i}列类型错误:${v.type}`);
-            });
-
-            const allLines = this.getList(list)
+            const allLines = result.list
                 .map((v) => {
                     return v
+                        .filter((v) => v.isServer)
                         .filter(filterInValidName)
                         .filter((v) => filterIgnoreName(v, ignores))
                         .reduce((accumulator, v) => {
@@ -119,7 +91,7 @@ export default class GernerateLuaService {
                 });
 
             allLines.map((v: any) => {
-                redisCommandList.push(`redis.call('set', key .. ':${catName}:${v[firstField?.name]}', '${JSON.stringify(v)}')`);
+                redisCommandList.push(`redis.call('set', key .. ':${catName}:${v[firstField.name]}', '${JSON.stringify(v)}')`);
             });
 
             redisCommandList.push(`redis.call('set', key .. ':${catName}', '${JSON.stringify(allLines)}')`);
@@ -130,6 +102,10 @@ export default class GernerateLuaService {
 
     generate(filePath: string, outFile: string, ignores: string[]) {
         this.readAsRedisCommand(filePath, ignores).then((redisCommandList) => {
+            if (redisCommandList.length == 0) {
+                console.log(`忽略${filePath}`);
+                return;
+            }
             this.write(redisCommandList, outFile);
 
             console.log(`生成成功，共处理了1个文件`);
